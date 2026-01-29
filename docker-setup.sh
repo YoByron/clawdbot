@@ -4,9 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 EXTRA_COMPOSE_FILE="$ROOT_DIR/docker-compose.extra.yml"
-IMAGE_NAME="${CLAWDBOT_IMAGE:-moltbot:local}"
-EXTRA_MOUNTS="${CLAWDBOT_EXTRA_MOUNTS:-}"
-HOME_VOLUME_NAME="${CLAWDBOT_HOME_VOLUME:-}"
+IMAGE_NAME="${MOLTBOT_IMAGE:-moltbot:local}"
+EXTRA_MOUNTS="${MOLTBOT_EXTRA_MOUNTS:-}"
+HOME_VOLUME_NAME="${MOLTBOT_HOME_VOLUME:-}"
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -21,29 +21,29 @@ if ! docker compose version >/dev/null 2>&1; then
   exit 1
 fi
 
-mkdir -p "${CLAWDBOT_CONFIG_DIR:-$HOME/.clawdbot}"
-mkdir -p "${CLAWDBOT_WORKSPACE_DIR:-$HOME/clawd}"
+mkdir -p "${MOLTBOT_CONFIG_DIR:-$HOME/.moltbot}"
+mkdir -p "${MOLTBOT_WORKSPACE_DIR:-$HOME/moltbot}"
 
-export CLAWDBOT_CONFIG_DIR="${CLAWDBOT_CONFIG_DIR:-$HOME/.clawdbot}"
-export CLAWDBOT_WORKSPACE_DIR="${CLAWDBOT_WORKSPACE_DIR:-$HOME/clawd}"
-export CLAWDBOT_GATEWAY_PORT="${CLAWDBOT_GATEWAY_PORT:-18789}"
-export CLAWDBOT_BRIDGE_PORT="${CLAWDBOT_BRIDGE_PORT:-18790}"
-export CLAWDBOT_GATEWAY_BIND="${CLAWDBOT_GATEWAY_BIND:-lan}"
-export CLAWDBOT_IMAGE="$IMAGE_NAME"
-export CLAWDBOT_DOCKER_APT_PACKAGES="${CLAWDBOT_DOCKER_APT_PACKAGES:-}"
+export MOLTBOT_CONFIG_DIR="${MOLTBOT_CONFIG_DIR:-$HOME/.moltbot}"
+export MOLTBOT_WORKSPACE_DIR="${MOLTBOT_WORKSPACE_DIR:-$HOME/moltbot}"
+export MOLTBOT_GATEWAY_PORT="${MOLTBOT_GATEWAY_PORT:-18789}"
+export MOLTBOT_BRIDGE_PORT="${MOLTBOT_BRIDGE_PORT:-18790}"
+export MOLTBOT_GATEWAY_BIND="${MOLTBOT_GATEWAY_BIND:-lan}"
+export MOLTBOT_IMAGE="$IMAGE_NAME"
+export MOLTBOT_DOCKER_APT_PACKAGES="${MOLTBOT_DOCKER_APT_PACKAGES:-}"
 
-if [[ -z "${CLAWDBOT_GATEWAY_TOKEN:-}" ]]; then
+if [[ -z "${MOLTBOT_GATEWAY_TOKEN:-}" ]]; then
   if command -v openssl >/dev/null 2>&1; then
-    CLAWDBOT_GATEWAY_TOKEN="$(openssl rand -hex 32)"
+    MOLTBOT_GATEWAY_TOKEN="$(openssl rand -hex 32)"
   else
-    CLAWDBOT_GATEWAY_TOKEN="$(python3 - <<'PY'
+    MOLTBOT_GATEWAY_TOKEN="$(python3 - <<'PY'
 import secrets
 print(secrets.token_hex(32))
 PY
 )"
   fi
 fi
-export CLAWDBOT_GATEWAY_TOKEN
+export MOLTBOT_GATEWAY_TOKEN
 
 COMPOSE_FILES=("$COMPOSE_FILE")
 COMPOSE_ARGS=()
@@ -62,8 +62,8 @@ YAML
 
   if [[ -n "$home_volume" ]]; then
     printf '      - %s:/home/node\n' "$home_volume" >>"$EXTRA_COMPOSE_FILE"
-    printf '      - %s:/home/node/.clawdbot\n' "$CLAWDBOT_CONFIG_DIR" >>"$EXTRA_COMPOSE_FILE"
-    printf '      - %s:/home/node/clawd\n' "$CLAWDBOT_WORKSPACE_DIR" >>"$EXTRA_COMPOSE_FILE"
+    printf '      - %s:/home/node/.moltbot\n' "$MOLTBOT_CONFIG_DIR" >>"$EXTRA_COMPOSE_FILE"
+    printf '      - %s:/home/node/moltbot\n' "$MOLTBOT_WORKSPACE_DIR" >>"$EXTRA_COMPOSE_FILE"
   fi
 
   for mount in "${mounts[@]}"; do
@@ -77,8 +77,8 @@ YAML
 
   if [[ -n "$home_volume" ]]; then
     printf '      - %s:/home/node\n' "$home_volume" >>"$EXTRA_COMPOSE_FILE"
-    printf '      - %s:/home/node/.clawdbot\n' "$CLAWDBOT_CONFIG_DIR" >>"$EXTRA_COMPOSE_FILE"
-    printf '      - %s:/home/node/clawd\n' "$CLAWDBOT_WORKSPACE_DIR" >>"$EXTRA_COMPOSE_FILE"
+    printf '      - %s:/home/node/.moltbot\n' "$MOLTDBOT_CONFIG_DIR" >>"$EXTRA_COMPOSE_FILE"
+    printf '      - %s:/home/node/moltbot\n' "$MOLTBOT_WORKSPACE_DIR" >>"$EXTRA_COMPOSE_FILE"
   fi
 
   for mount in "${mounts[@]}"; do
@@ -154,20 +154,20 @@ upsert_env() {
 }
 
 upsert_env "$ENV_FILE" \
-  CLAWDBOT_CONFIG_DIR \
-  CLAWDBOT_WORKSPACE_DIR \
-  CLAWDBOT_GATEWAY_PORT \
-  CLAWDBOT_BRIDGE_PORT \
-  CLAWDBOT_GATEWAY_BIND \
-  CLAWDBOT_GATEWAY_TOKEN \
-  CLAWDBOT_IMAGE \
-  CLAWDBOT_EXTRA_MOUNTS \
-  CLAWDBOT_HOME_VOLUME \
-  CLAWDBOT_DOCKER_APT_PACKAGES
+  MOLTBOT_CONFIG_DIR \
+  MOLTBOT_WORKSPACE_DIR \
+  MOLTBOT_GATEWAY_PORT \
+  MOLTBOT_BRIDGE_PORT \
+  MOLTBOT_GATEWAY_BIND \
+  MOLTBOT_GATEWAY_TOKEN \
+  MOLTBOT_IMAGE \
+  MOLTBOT_EXTRA_MOUNTS \
+  MOLTBOT_HOME_VOLUME \
+  MOLTBOT_DOCKER_APT_PACKAGES
 
 echo "==> Building Docker image: $IMAGE_NAME"
 docker build \
-  --build-arg "CLAWDBOT_DOCKER_APT_PACKAGES=${CLAWDBOT_DOCKER_APT_PACKAGES}" \
+  --build-arg "MOLTBOT_DOCKER_APT_PACKAGES=${MOLTBOT_DOCKER_APT_PACKAGES}" \
   -t "$IMAGE_NAME" \
   -f "$ROOT_DIR/Dockerfile" \
   "$ROOT_DIR"
@@ -177,7 +177,7 @@ echo "==> Onboarding (interactive)"
 echo "When prompted:"
 echo "  - Gateway bind: lan"
 echo "  - Gateway auth: token"
-echo "  - Gateway token: $CLAWDBOT_GATEWAY_TOKEN"
+echo "  - Gateway token: $MOLTBOT_GATEWAY_TOKEN"
 echo "  - Tailscale exposure: Off"
 echo "  - Install Gateway daemon: No"
 echo ""
@@ -200,10 +200,10 @@ docker compose "${COMPOSE_ARGS[@]}" up -d moltbot-gateway
 echo ""
 echo "Gateway running with host port mapping."
 echo "Access from tailnet devices via the host's tailnet IP."
-echo "Config: $CLAWDBOT_CONFIG_DIR"
-echo "Workspace: $CLAWDBOT_WORKSPACE_DIR"
-echo "Token: $CLAWDBOT_GATEWAY_TOKEN"
+echo "Config: $MOLTBOT_CONFIG_DIR"
+echo "Workspace: $MOLTBOT_WORKSPACE_DIR"
+echo "Token: $MOLTBOT_GATEWAY_TOKEN"
 echo ""
 echo "Commands:"
 echo "  ${COMPOSE_HINT} logs -f moltbot-gateway"
-echo "  ${COMPOSE_HINT} exec moltbot-gateway node dist/index.js health --token \"$CLAWDBOT_GATEWAY_TOKEN\""
+echo "  ${COMPOSE_HINT} exec moltbot-gateway node dist/index.js health --token \"$MOLTBOT_GATEWAY_TOKEN\""
